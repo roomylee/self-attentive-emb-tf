@@ -11,18 +11,18 @@ import data_helpers
 # ==================================================
 
 # Data loading params
+tf.flags.DEFINE_string("train_dir", "data/train.csv", "Path of train data")
 tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
-tf.flags.DEFINE_integer("max_sentence_length", 100, "Max sentence length in train/test data (Default: 100)")
+tf.flags.DEFINE_integer("max_sentence_length", 50, "Max sentence length in train/test data (Default: 50)")
 
 # Model Hyperparameters
 tf.flags.DEFINE_string("word2vec", None, "Word2vec file with pre-trained embeddings")
 tf.flags.DEFINE_integer("embedding_dim", 300, "Dimensionality of word embedding (Default: 300)")
-tf.flags.DEFINE_integer("hidden_size", 512, "Size of LSTM hidden layer (Default: 512)")
+tf.flags.DEFINE_integer("hidden_size", 256, "Size of LSTM hidden layer (Default: 256)")
 tf.flags.DEFINE_integer("d_a_size", 350, "Size of W_s1 embedding (Default: 350)")
 tf.flags.DEFINE_integer("r_size", 30, "Size of W_s2 embedding (Default: 30)")
-tf.flags.DEFINE_integer("fc_size", 2000, "Size of fully connected layer (Default: 2000)")
-tf.flags.DEFINE_float("p_coef", 1.0, "Coefficient for penalty (Default: 1.0)")
-tf.flags.DEFINE_float("dropout_keep_prob", 0.7, "Dropout keep probability (Default: 0.7)")
+tf.flags.DEFINE_integer("fc_size", 1000, "Size of fully connected layer (Default: 1000)")
+tf.flags.DEFINE_float("p_coef", 1e-3, "Coefficient for penalty (Default: 1e-3)")
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (Default: 64)")
@@ -31,7 +31,7 @@ tf.flags.DEFINE_integer("display_every", 10, "Number of iterations to display tr
 tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps")
 tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store")
-tf.flags.DEFINE_float("learning_rate", 1e-3, "Which learning rate to start with. (Default: 1e-3)")
+tf.flags.DEFINE_float("learning_rate", 1e-2, "Which learning rate to start with. (Default: 1e-2)")
 
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
@@ -43,7 +43,7 @@ FLAGS = tf.flags.FLAGS
 
 def train():
     with tf.device('/cpu:0'):
-        x_text, y = data_helpers.load_data_and_labels("train")
+        x_text, y = data_helpers.load_data_and_labels(FLAGS.train_dir)
 
     # Build vocabulary
     # Example: x_text[3] = "A misty <e1>ridge</e1> uprises from the <e2>surge</e2>."
@@ -59,11 +59,17 @@ def train():
     print("y = {0}".format(y.shape))
     print("")
 
+    # Randomly shuffle data
+    np.random.seed(10)
+    shuffle_indices = np.random.permutation(np.arange(len(y)))
+    x_shuffled = x[shuffle_indices]
+    y_shuffled = y[shuffle_indices]
+
     # Split train/test set
     # TODO: This is very crude, should use cross-validation
     dev_sample_index = -1 * int(FLAGS.dev_sample_percentage * float(len(y)))
-    x_train, x_dev = x[:dev_sample_index], x[dev_sample_index:]
-    y_train, y_dev = y[:dev_sample_index], y[dev_sample_index:]
+    x_train, x_dev = x_shuffled[:dev_sample_index], x_shuffled[dev_sample_index:]
+    y_train, y_dev = y_shuffled[:dev_sample_index], y_shuffled[dev_sample_index:]
     print("Train/Dev split: {:d}/{:d}\n".format(len(y_train), len(y_dev)))
 
     with tf.Graph().as_default():
@@ -157,8 +163,7 @@ def train():
                 # Train
                 feed_dict = {
                     model.input_text: x_batch,
-                    model.input_y: y_batch,
-                    model.dropout_keep_prob: FLAGS.dropout_keep_prob
+                    model.input_y: y_batch
                 }
 
                 _, step, summaries, loss, accuracy = sess.run(
@@ -173,17 +178,30 @@ def train():
                 # Evaluation
                 if step % FLAGS.evaluate_every == 0:
                     print("\nEvaluation:")
-                    feed_dict_dev = {
-                        model.input_text: x_dev,
-                        model.input_y: y_dev,
-                        model.dropout_keep_prob: 1.0
-                    }
-                    summaries_dev, loss, accuracy, predictions = sess.run(
-                        [dev_summary_op, model.loss, model.accuracy, model.predictions], feed_dict_dev)
-                    dev_summary_writer.add_summary(summaries_dev, step)
+                    # Generate batches
+                    batches_dev = data_helpers.batch_iter(
+                        list(zip(x_dev, y_dev)), FLAGS.batch_size, 1)
+                    # Evaluation loop. For each batch...
+                    loss_dev = 0
+                    accuracy_dev = 0
+                    cnt = 0
+                    for batch_dev in batches_dev:
+                        x_batch_dev, y_batch_dev = zip(*batch_dev)
+
+                        feed_dict_dev = {
+                            model.input_text: x_batch_dev,
+                            model.input_y: y_batch_dev
+                        }
+                        summaries_dev, loss, accuracy, predictions = sess.run(
+                            [dev_summary_op, model.loss, model.accuracy, model.predictions], feed_dict_dev)
+                        dev_summary_writer.add_summary(summaries_dev, step)
+
+                        loss_dev += loss
+                        accuracy_dev += accuracy
+                        cnt += 1
 
                     time_str = datetime.datetime.now().isoformat()
-                    print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
+                    print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss_dev / cnt, accuracy_dev / cnt))
 
                 # Model checkpoint
                 if step % FLAGS.checkpoint_every == 0:

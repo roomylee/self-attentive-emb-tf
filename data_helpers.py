@@ -1,6 +1,6 @@
 import numpy as np
 import re
-from sklearn.datasets import fetch_20newsgroups
+import csv
 
 
 def clean_str(string):
@@ -24,18 +24,24 @@ def clean_str(string):
     return string.strip().lower()
 
 
-def load_data_and_labels(mode):
+def load_data_and_labels(path):
     data = []
-    if(mode == "train"):
-        data = fetch_20newsgroups(data_home="data/train/", subset="train", shuffle=True)
-    elif(mode == "test"):
-        data = fetch_20newsgroups(data_home="data/test/", subset="test", shuffle=True)
-    else:
-        raise ValueError("subset can only be 'train', 'test', got '%s'" % mode)
+    labels = []
+    with open(path, 'r') as f:
+        rdr = csv.reader(f, delimiter=',', quotechar='"')
+        for row in rdr:
+            txt = ""
+            for s in row[1:]:
+                txt = txt + re.sub("^\s*(.-)\s*$", "%1", s).replace("\\n", "\n") + " "
+            txt = clean_str(txt)
+            data.append(txt)
+            labels.append(int(row[0]))
+
+    data = np.asarray(data)
+    labels = np.asarray(labels)
 
     # Label Data
-    y = data.target
-    labels_count = np.unique(y).shape[0]
+    labels_count = np.unique(labels).shape[0]
 
     # convert class labels from scalars to one-hot vectors
     # 0  => [1 0 0 0 0 ... 0 0 0 0 0]
@@ -49,10 +55,10 @@ def load_data_and_labels(mode):
         labels_one_hot.flat[index_offset + labels_dense.ravel()] = 1
         return labels_one_hot
 
-    labels = dense_to_one_hot(y, labels_count)
+    labels = dense_to_one_hot(labels, labels_count)
     labels = labels.astype(np.uint8)
 
-    return data.data, labels
+    return data, labels
 
 
 def batch_iter(data, batch_size, num_epochs, shuffle=True):
@@ -76,4 +82,4 @@ def batch_iter(data, batch_size, num_epochs, shuffle=True):
 
 
 if __name__ == "__main__":
-    load_data_and_labels("test")
+    load_data_and_labels("data/train.csv")
