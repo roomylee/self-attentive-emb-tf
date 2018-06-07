@@ -48,7 +48,6 @@ def eval():
             # Get the placeholders from the graph by name
             input_text = graph.get_operation_by_name("input_text").outputs[0]
             # input_y = graph.get_operation_by_name("input_y").outputs[0]
-            dropout_keep_prob = graph.get_operation_by_name("dropout_keep_prob").outputs[0]
 
             # Tensors we want to evaluate
             predictions = graph.get_operation_by_name("output/predictions").outputs[0]
@@ -59,8 +58,7 @@ def eval():
             # Collect the predictions here
             all_predictions = []
             for x_batch in batches:
-                batch_predictions = sess.run(predictions, {input_text: x_batch,
-                                                           dropout_keep_prob: 1.0})
+                batch_predictions = sess.run(predictions, {input_text: x_batch})
                 all_predictions = np.concatenate([all_predictions, batch_predictions])
 
             correct_predictions = float(sum(all_predictions == y_eval))
