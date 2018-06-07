@@ -21,17 +21,17 @@ tf.flags.DEFINE_integer("embedding_dim", 300, "Dimensionality of word embedding 
 tf.flags.DEFINE_integer("hidden_size", 256, "Size of LSTM hidden layer (Default: 256)")
 tf.flags.DEFINE_integer("d_a_size", 350, "Size of W_s1 embedding (Default: 350)")
 tf.flags.DEFINE_integer("r_size", 30, "Size of W_s2 embedding (Default: 30)")
-tf.flags.DEFINE_integer("fc_size", 1000, "Size of fully connected layer (Default: 1000)")
-tf.flags.DEFINE_float("p_coef", 1e-3, "Coefficient for penalty (Default: 1e-3)")
+tf.flags.DEFINE_integer("fc_size", 2000, "Size of fully connected layer (Default: 2000)")
+tf.flags.DEFINE_float("p_coef", 1.0, "Coefficient for penalty (Default: 1.0)")
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (Default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 100, "Number of training epochs (Default: 10)")
+tf.flags.DEFINE_integer("num_epochs", 10, "Number of training epochs (Default: 10)")
 tf.flags.DEFINE_integer("display_every", 10, "Number of iterations to display training info.")
 tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps")
 tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store")
-tf.flags.DEFINE_float("learning_rate", 1e-2, "Which learning rate to start with. (Default: 1e-2)")
+tf.flags.DEFINE_float("learning_rate", 1e-3, "Which learning rate to start with. (Default: 1e-3)")
 
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
@@ -46,7 +46,7 @@ def train():
         x_text, y = data_helpers.load_data_and_labels(FLAGS.train_dir)
 
     # Build vocabulary
-    # Example: x_text[3] = "A misty <e1>ridge</e1> uprises from the <e2>surge</e2>."
+    # Example: x_text[3] = "A misty ridge uprises from the surge."
     # ['a misty ridge uprises from the surge <UNK> <UNK> ... <UNK>']
     # =>
     # [27 39 40 41 42  1 43  0  0 ... 0]
@@ -192,8 +192,9 @@ def train():
                             model.input_text: x_batch_dev,
                             model.input_y: y_batch_dev
                         }
-                        summaries_dev, loss, accuracy, predictions = sess.run(
-                            [dev_summary_op, model.loss, model.accuracy, model.predictions], feed_dict_dev)
+
+                        summaries_dev, loss, accuracy = sess.run(
+                            [dev_summary_op, model.loss, model.accuracy], feed_dict_dev)
                         dev_summary_writer.add_summary(summaries_dev, step)
 
                         loss_dev += loss
