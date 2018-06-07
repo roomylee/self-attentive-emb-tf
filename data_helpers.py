@@ -26,7 +26,7 @@ def clean_str(string):
 
 def load_data_and_labels(path):
     data = []
-    labels = []
+    y = []
     with open(path, 'r') as f:
         rdr = csv.reader(f, delimiter=',', quotechar='"')
         for row in rdr:
@@ -35,27 +35,23 @@ def load_data_and_labels(path):
                 txt = txt + re.sub("^\s*(.-)\s*$", "%1", s).replace("\\n", "\n") + " "
             txt = clean_str(txt)
             data.append(txt)
-            labels.append(int(row[0]))
+            y.append(int(row[0]))
 
     data = np.asarray(data)
-    labels = np.asarray(labels)
+    y = np.asarray(y)
 
     # Label Data
-    labels_count = np.unique(labels).shape[0]
+    labels_count = np.unique(y).shape[0]
 
     # convert class labels from scalars to one-hot vectors
-    # 0  => [1 0 0 0 0 ... 0 0 0 0 0]
-    # 1  => [0 1 0 0 0 ... 0 0 0 0 0]
-    # ...
-    # 19 => [0 0 0 0 0 ... 0 0 0 0 1]
     def dense_to_one_hot(labels_dense, num_classes):
         num_labels = labels_dense.shape[0]
         index_offset = np.arange(num_labels) * num_classes
         labels_one_hot = np.zeros((num_labels, num_classes))
-        labels_one_hot.flat[index_offset + labels_dense.ravel()] = 1
+        labels_one_hot.flat[index_offset + labels_dense.ravel() - 1] = 1
         return labels_one_hot
 
-    labels = dense_to_one_hot(labels, labels_count)
+    labels = dense_to_one_hot(y, labels_count)
     labels = labels.astype(np.uint8)
 
     return data, labels
