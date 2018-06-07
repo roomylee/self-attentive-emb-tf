@@ -26,17 +26,22 @@ class SelfAttention:
                                                                                        sequence_length=text_length,
                                                                                        dtype=tf.float32)
             self.H = tf.concat([self.output_fw, self.output_bw], axis=2)
+            H_reshape = tf.reshape(self.H, [-1, 2 * hidden_size])
 
         with tf.name_scope("self-attention"):
             self.W_s1 = tf.get_variable("W_s1", shape=[2*hidden_size, d_a_size], initializer=initializer)
-            self.temp_mat = tf.nn.tanh(tf.einsum('aij,jk->aik', self.H, self.W_s1))
+            _H_s1 = tf.nn.tanh(tf.matmul(H_reshape, self.W_s1))
             self.W_s2 = tf.get_variable("W_s2", shape=[d_a_size, r_size], initializer=initializer)
-            self.A = tf.nn.softmax(tf.einsum('aij,jk->aik', self.temp_mat, self.W_s2), name="attention")
+            _H_s2 = tf.matmul(_H_s1, self.W_s2)
+            _H_s2_reshape = tf.transpose(tf.reshape(_H_s2, [-1, sequence_length, r_size]), [0, 2, 1])
+            self.A = tf.nn.softmax(_H_s2_reshape, name="attention")
 
         with tf.name_scope("sentence-embedding"):
-            self.M = tf.einsum('aij,aik->ajk', self.H, self.A)
+            self.M = tf.matmul(self.A, self.H)
 
         with tf.name_scope("fully-connected"):
+            # self.M_pool = tf.reduce_mean(self.M, axis=1)
+            # W_fc = tf.get_variable("W_fc", shape=[2 * hidden_size, fc_size], initializer=initializer)
             self.M_flat = tf.reshape(self.M, shape=[-1, 2 * hidden_size * r_size])
             W_fc = tf.get_variable("W_fc", shape=[2 * hidden_size * r_size, fc_size], initializer=initializer)
             b_fc = tf.Variable(tf.constant(0.1, shape=[fc_size]), name="b_fc")
@@ -49,14 +54,14 @@ class SelfAttention:
             self.predictions = tf.argmax(self.logits, 1, name="predictions")
 
         with tf.name_scope("penalization"):
-            self.A_AT = tf.einsum('aij,aki->akj', self.A, tf.transpose(self.A, [0, 2, 1]))
-            I = tf.reshape(tf.tile(tf.eye(r_size), [tf.shape(self.A)[0], 1]), [-1, r_size, r_size])
-            self.P = tf.square(tf.norm(self.A_AT - I, axis=[-2, -1], ord="fro"))
-            self.loss_P = tf.reduce_mean(self.P * p_coef)
+            self.AA_T = tf.matmul(self.A, tf.transpose(self.A, [0, 2, 1]))
+            self.I = tf.reshape(tf.tile(tf.eye(r_size), [tf.shape(self.A)[0], 1]), [-1, r_size, r_size])
+            self.P = tf.square(tf.norm(self.AA_T - self.I, axis=[-2, -1], ord="fro"))
 
         # Calculate mean cross-entropy loss
         with tf.name_scope("loss"):
-            losses = tf.nn.sigmoid_cross_entropy_with_logits(logits=self.logits, labels=self.input_y)
+            losses = tf.nn.softmax_cross_entropy_with_logits(logits=self.logits, labels=self.input_y)
+            self.loss_P = tf.reduce_mean(self.P * p_coef)
             self.loss = tf.reduce_mean(losses) + self.loss_P
 
         # Accuracy
