@@ -81,14 +81,18 @@ Tensorflow Implementation of "[A Structured Self-attentive Sentence Embedding](h
 
 ### Evalutation
 * You must give "**checkpoint_dir**" argument, path of checkpoint(trained neural model) file, like below example.
+* If you don't want to visualize the attention, give option like `--visualize False`.
 
 * **Evaluation Example:**
 	```bash
 	$ python eval.py --checkpoint_dir "runs/1523902663/checkpoints/"
 	```
 
+
 ## Results
-* **Accuracy for test data = 0.920789**
+#### 1) Accuracy test data = 0.920789
+#### 2) Visualization of Self Attention
+![viz](https://user-images.githubusercontent.com/15166794/41875853-1dea6f28-7907-11e8-94e9-398e2699aca5.png)
 
 
 ## Reference
