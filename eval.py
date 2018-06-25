@@ -77,7 +77,7 @@ def eval():
                     for k in range(len(attention[0])):
                         f.write('<p style="margin:10px;">\n')
                         ww = tokenizer.findall(text_batch[0])
-                        print(attention[0][k])
+
                         for j in range(len(attention[0][0])):
                             alpha = "{:.2f}".format(attention[0][k][j])
                             if len(ww) > j:
@@ -94,7 +94,7 @@ def eval():
 
             correct_predictions = float(sum(all_predictions == y_eval))
             print("\nTotal number of test examples: {}".format(len(y_eval)))
-            print("Accuracy: {:g}".format(correct_predictions / float(len(y_eval))))
+            print("Accuracy: {:g}\n".format(correct_predictions / float(len(y_eval))))
 
 
 def main(_):
