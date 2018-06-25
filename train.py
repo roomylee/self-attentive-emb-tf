@@ -13,25 +13,25 @@ import data_helpers
 # Data loading params
 tf.flags.DEFINE_string("train_dir", "data/train.csv", "Path of train data")
 tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
-tf.flags.DEFINE_integer("max_sentence_length", 50, "Max sentence length in train/test data (Default: 50)")
+tf.flags.DEFINE_integer("max_sentence_length", 50, "Max sentence length in train/test data")
 
 # Model Hyperparameters
 tf.flags.DEFINE_string("word2vec", None, "Word2vec file with pre-trained embeddings")
-tf.flags.DEFINE_integer("embedding_dim", 300, "Dimensionality of word embedding (Default: 300)")
-tf.flags.DEFINE_integer("hidden_size", 256, "Size of LSTM hidden layer (Default: 256)")
-tf.flags.DEFINE_integer("d_a_size", 350, "Size of W_s1 embedding (Default: 350)")
-tf.flags.DEFINE_integer("r_size", 30, "Size of W_s2 embedding (Default: 30)")
-tf.flags.DEFINE_integer("fc_size", 2000, "Size of fully connected layer (Default: 2000)")
-tf.flags.DEFINE_float("p_coef", 1.0, "Coefficient for penalty (Default: 1.0)")
+tf.flags.DEFINE_integer("embedding_dim", 300, "Dimensionality of word embedding")
+tf.flags.DEFINE_integer("hidden_size", 256, "Size of LSTM hidden layer")
+tf.flags.DEFINE_integer("d_a_size", 350, "Size of W_s1 embedding")
+tf.flags.DEFINE_integer("r_size", 30, "Size of W_s2 embedding")
+tf.flags.DEFINE_integer("fc_size", 2000, "Size of fully connected layer")
+tf.flags.DEFINE_float("p_coef", 1.0, "Coefficient for penalty")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (Default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 10, "Number of training epochs (Default: 10)")
+tf.flags.DEFINE_integer("batch_size", 64, "Batch Size")
+tf.flags.DEFINE_integer("num_epochs", 10, "Number of training epochs")
 tf.flags.DEFINE_integer("display_every", 10, "Number of iterations to display training info.")
 tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps")
 tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store")
-tf.flags.DEFINE_float("learning_rate", 1e-3, "Which learning rate to start with. (Default: 1e-3)")
+tf.flags.DEFINE_float("learning_rate", 1e-3, "Which learning rate to start with.")
 
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")

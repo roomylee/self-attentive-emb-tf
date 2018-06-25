@@ -11,7 +11,7 @@ import data_helpers
 tf.flags.DEFINE_string("test_dir", "data/test.csv", "Path of test data")
 
 # Eval Parameters
-tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (Default: 64)")
+tf.flags.DEFINE_integer("batch_size", 64, "Batch Size")
 tf.flags.DEFINE_string("checkpoint_dir", "", "Checkpoint directory from training run")
 
 # Misc Parameters
